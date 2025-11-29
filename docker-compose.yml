@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  sdn-hw3:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: sdn-hw3-firewall
+    privileged: true
+    # Required for Mininet to create network namespaces
+    cap_add:
+      - NET_ADMIN
+      - SYS_ADMIN
+      - SYS_NICE
+    environment:
+      - PYTHONUNBUFFERED=1
+    # Expose ports to host
+    ports:
+      - "6633:6633"   # OpenFlow controller
+      - "6653:6653"   # Alternative OpenFlow port
+      - "8080:8080"   # Ryu REST API
+    volumes:
+      # Mount source code for live development
+      - ./sdn_topology.py:/app/sdn_topology.py:rw
+      - ./simple_firewall_student.py:/app/simple_firewall_student.py:rw
+      # Mount scripts directory
+      - ./scripts:/app/scripts:rw
+      # Mount for Mininet state
+      - /lib/modules:/lib/modules:ro
+      # Persist OVS database
+      - ovs-data:/etc/openvswitch
+    working_dir: /app
+    stdin_open: true
+    tty: true
+    # Start with bash shell for manual testing
+    command: /bin/bash
+
+volumes:
+  ovs-data:
+    driver: local

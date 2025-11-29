@@ -1,0 +1,11 @@
+# Ryu SDN Framework
+ryu==4.34
+
+# Event handling (compatible version for Python 3.8)
+eventlet==0.30.2
+
+# Network utilities
+requests>=2.31.0
+
+# Additional utilities
+python-daemon>=3.0.1
