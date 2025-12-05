@@ -77,8 +77,14 @@ class SimpleFirewallStudent(app_manager.RyuApp):
     datapath = ev.msg.datapath
     ofproto = datapath.ofproto
     parser = datapath.ofproto_parser
+    self.logger.info("Switch connected: datapath_id=%s", datapath.id)
 
     # TODO: 아래 table-miss 엔트리
+    # table-miss flow entry 추가
+    # priority=0, 매칭되는 플로우가 없으면 컨트롤러로 전송
+    match = parser.OFPMatch()
+    actions = [parser.OFPActionOutput(ofproto.OFPP_CONTROLLER, ofproto.OFPCML_NO_BUFFER)]
+    self.add_flow(datapath, 0, match, actions)
 
   @set_ev_cls(ofp_event.EventOFPPacketIn, MAIN_DISPATCHER)
   def _packet_in_handler(self, ev):
@@ -115,6 +121,7 @@ class SimpleFirewallStudent(app_manager.RyuApp):
     # 한 줄을 직접 작성
     # --------------------------------
     # 여기에 코드 작성
+    self.mac_to_port[dpid][src] = in_port
     # --------------------------------
 
     # ==========================
@@ -127,9 +134,9 @@ class SimpleFirewallStudent(app_manager.RyuApp):
     # TODO: IPv4 패킷인 경우, src_ip와 dst_ip를 추출하는 코드를 작성하시오.
     # 힌트: ip4.src, ip4.dst
     # --------------------------------
-    # if ip4:
-    #     src_ip = ...
-    #     dst_ip = ...
+    if ip4:
+      src_ip = ip4.src
+      dst_ip = ip4.dst
     # --------------------------------
 
     # 디버깅용 로그 출력
@@ -152,6 +159,12 @@ class SimpleFirewallStudent(app_manager.RyuApp):
     #
     # --------------------------------
     # 여기에 코드 작성
+    if src_ip and dst_ip:
+      if (src_ip, dst_ip) in self.block_pairs:
+        self.logger.info("Blocking traffic from %s to %s", src_ip, dst_ip)
+        match = parser.OFPMatch(eth_type=ether_types.ETH_TYPE_IP, ipv4_src=src_ip, ipv4_dst=dst_ip)
+        self.add_flow(datapath, priority=100, match=match, actions=[])
+        return
     # --------------------------------
 
     # ==========================
